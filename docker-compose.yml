@@ -1,0 +1,60 @@
+version: "3"
+services:
+  #PHP Service
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: extractsystem
+    container_name: ${EXTRACT_SERVICE_NAME_APP}
+    restart: unless-stopped
+    user: "www:www"
+    working_dir: /var/www/extractsystem/
+    volumes:
+      - ${EXTRACT_VOLUME_BIND_DATA_APP_SERVICE}:/var/www/extractsystem
+      - ${EXTRACT_VOLUME_CONFIG_APP_SERVICE}:/usr/local/etc/php/conf.d/local.ini
+      - ${EXTRACT_VOLUME_SHARE_STORAGE_APP_SERVICE}:/var/www/extractsystem/storage
+    networks:
+      - extractsystem
+  #MySQL Service
+  db:
+    image: mysql:5.7.22
+    container_name: ${EXTRACT_SERVICE_NAME_DB}
+    restart: unless-stopped
+    tty: true
+    ports:
+      - ${EXTRACT_EXPOSE_PORT_DB_SERVICE}:3306
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - ${EXTRACT_VOLUME_SAVE_DATA_DB_SERVICE}:/var/lib/mysql/
+      - ${EXTRACT_VOLUME_CONFIG_DB_SERVICE}:/etc/mysql/my.cnf
+      - ${EXTRACT_VOLUME_ENTRIPOINT_DB_SERVICE}:/docker-entrypoint-initdb.d
+    networks:
+      - extractsystem
+  #Nginx Service
+  nginx:
+    image: nginx:alpine
+    container_name: ${EXTRACT_SERVICE_NAME_NGINX}
+    restart: unless-stopped
+    ports:
+      - ${EXTRACT_EXPOSE_PORT_HTTP_NGNIX_SERVICE}:80
+      - ${EXTRACT_EXPOSE_PORT_HTTPS_NGNIX_SERVICE}:443
+    volumes:
+      - ${EXTRACT_VOLUME_BIND_DATA_NGNIX_SERVICE}:/var/www/extractsystem
+      - ${EXTRACT_VOLUME_CONFIG_NGNIX_SERVICE}:/etc/nginx/conf.d/
+    networks:
+      - extractsystem
+#Docker Networks
+networks:
+  extractsystem:
+    driver: bridge
+#Volumes
+volumes:
+  dbdata:
+    driver: local
